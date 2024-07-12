@@ -41,12 +41,6 @@ namespace network::ip
       return inet_addr(to_string().c_str());
     }
   };
-
-  std::ostream &operator<<(std::ostream &os, const IPv4Address &addr)
-  {
-    os << addr.to_string();
-    return os;
-  }
 }
 
 #endif //WEBSERVER_IPADDRESS_HPP
