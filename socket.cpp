@@ -3,44 +3,51 @@
 //
 
 #include "socket.hpp"
+#include "trace.hpp"
+
+#include <thread>
 
 namespace network::tcp
 {
-    void Socket::openSocket()
-    {
-      logging::Logger::getInstance().log(logging::LogLevel::INFO, "Opening socket");
+  Socket::Socket(const network::ip::IPv4Address& addr, const unsigned short port) : address_(addr), port_(port), socketAddressLen_(sizeof(socketAddress_))
+  {
+    openSocket();
+    bindSocket();
+  }
 
-      socket_ = socket(AF_INET, SOCK_STREAM, 0);
-      if (socket_ < 0)
-        throw logging::SystemError(LOC, "Creating a socket failed");
-    }
+  Socket::~Socket()
+  {
+    closeSocket();
+  }
 
-    void Socket::closeSocket()
-    {
-      logging::Logger::getInstance().log(logging::LogLevel::INFO, "Closing socket");
-    }
+  void Socket::openSocket()
+  {
+    const logging::Trace trace(__func__ );
 
-    void Socket::acceptConnection(SocketFileDescriptor& accepted_socket)
-    {
-      accepted_socket = accept(socket_, reinterpret_cast<sockaddr*>(&socketAddress_), &socketAddressLen_);
-      if (accepted_socket < 0)
-        throw logging::SystemError(LOC, fmt::format("Failed to accept incoming connection from {}:{}", address_.to_string(), port_));
-    }
+    socket_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_ < 0)
+      throw logging::SystemError(LOC, "Creating a socket failed");
+  }
 
-    Socket::Socket(const network::ip::IPv4Address& addr, const unsigned short port) : address_(addr), port_(port), socketAddressLen_(sizeof(socketAddress_))
-    {
-      openSocket();
-      bindSocket();
-    }
+  void Socket::closeSocket()
+  {
+    const logging::Trace trace(__func__ );
+    socket_ = -1;
+  }
 
-     Socket::~Socket()
-     {
-       closeSocket();
-     }
+  void Socket::acceptConnection(SocketFileDescriptor& accepted_socket)
+  {
+    const logging::Trace trace(__func__ );
+    accepted_socket = accept(socket_, reinterpret_cast<sockaddr*>(&socketAddress_), &socketAddressLen_);
+    if (accepted_socket < 0)
+      throw logging::SystemError(LOC, fmt::format("Failed to accept incoming connection from {}:{}", address_.to_string(), port_));
+  }
+
+
 
      void Socket::bindSocket()
      {
-       logging::Logger::getInstance().log(logging::LogLevel::INFO, "Binding socket");
+       const logging::Trace trace(__func__ );
 
        memset(&socketAddress_, 0, sizeof(socketAddress_));
        socketAddress_.sin_family = AF_INET;
@@ -51,38 +58,33 @@ namespace network::tcp
          throw logging::SystemError(LOC, "Cannot connect socket to address");
      }
 
-     void Socket::listenSocket(const std::function<std::string(const std::string& msg_received)>& response_callback)
+     void Socket::listenSocket()
      {
+       const logging::Trace trace(__func__ );
+
        constexpr short MAX_NUMBER_LISTENING_THREADS{5};
        if (listen(socket_, MAX_NUMBER_LISTENING_THREADS) < 0)
          throw logging::SystemError(LOC, "Socket listen failed!");
 
-       logging::Logger::getInstance().log(logging::LogLevel::INFO, fmt::format("Listening on {}:{}", address_.to_string(), port_));
+       SocketFileDescriptor accepted_socket;
+       acceptConnection(accepted_socket);
 
        while (true)
        {
-         SocketFileDescriptor accepted_socket;
-         acceptConnection(accepted_socket);
-
-         constexpr size_t BUFFER_SIZE{2048};
-         std::array<char, BUFFER_SIZE> buffer{};
-         const int bytes_received = read(accepted_socket, buffer.data(), BUFFER_SIZE);
+         constexpr int SIZE_BUFFER{2048};
+         char buffer[SIZE_BUFFER]{};
+         const int bytes_received = read(accepted_socket, buffer, SIZE_BUFFER);
          if (bytes_received < 0)
-           throw logging::SystemError(LOC, "Failed to read bytes from socket");
+           throw logging::SystemError(LOC, "Read failed");
 
-         logging::Logger::getInstance().log(logging::LogLevel::INFO, fmt::format("Received {} bytes", bytes_received));
-         logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Msg: {}", buffer.data()));
+         logging::Logger::getInstance().log(logging::LogLevel::INFO, fmt::format("Message received: {}", buffer));
 
-         sendResponse(accepted_socket, response_callback(buffer.data()));
+         const std::string response{R"(HTTP/1.1 200 OK\r\n\n)"};
+         const int bytes_sent = send(accepted_socket, response.c_str(), response.size(), 0);
+         if (bytes_sent != response.size())
+           throw logging::SystemError(LOC, "send failed");
+
+         break;
        }
-     }
-
-     void Socket::sendResponse(const SocketFileDescriptor& accepted_socket, const std::string& response_string) const
-     {
-      const long bytesSent = write(accepted_socket, response_string.c_str(), response_string.size());
-      if (bytesSent == response_string.size())
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Send response successful");
-      else
-        throw logging::SystemError(LOC, "Sending response message failed!");
      }
 };

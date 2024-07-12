@@ -24,23 +24,15 @@ namespace network::tcp
     socklen_t socketAddressLen_;
 
     void openSocket();
-
     void bindSocket();
-
     void closeSocket();
 
     void acceptConnection(SocketFileDescriptor& accepted_socket);
-
   public:
     Socket(const network::ip::IPv4Address &addr, unsigned short port);
-
     ~Socket();
 
-
-    void listenSocket(const std::function<std::string(const std::string& msg_received)>& response_callback);
-
-    void sendResponse(const SocketFileDescriptor& accepted_socket, const std::string& response_string) const;
-
+    void listenSocket();
   };
 
 } // network::tcp

@@ -78,10 +78,6 @@ namespace network
         }
         // Assign the new file descriptor
         socket_fd_ = fd;
-        if (socket_fd_ < 0)
-        {
-          throw logging::Error(LOC, "Invalid value for file descriptor");
-        }
       }
       return *this;
     }
