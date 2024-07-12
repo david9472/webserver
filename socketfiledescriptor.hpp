@@ -17,6 +17,17 @@ namespace network
   {
   private:
     int socket_fd_{-1};
+
+    void closeSocketFd()
+    {
+      if (socket_fd_ < 0)
+        return;
+
+      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Closing socket file descriptor");
+      close(socket_fd_);
+      socket_fd_ = -1;
+    }
+
   public:
     SocketFileDescriptor() = default;
 
@@ -47,7 +58,7 @@ namespace network
         // Close the current file descriptor
         if (socket_fd_ >= 0)
         {
-          close(socket_fd_);
+          closeSocketFd();
         }
         // Transfer ownership of the file descriptor
         socket_fd_ = other.socket_fd_;
@@ -63,8 +74,7 @@ namespace network
         // Close the current file descriptor if valid
         if (socket_fd_ >= 0)
         {
-          logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Closing socket file descriptor");
-          close(socket_fd_);
+          closeSocketFd();
         }
         // Assign the new file descriptor
         socket_fd_ = fd;
@@ -78,7 +88,7 @@ namespace network
 
     ~SocketFileDescriptor()
     {
-      close(socket_fd_);
+      closeSocketFd();
     }
 
     operator int() const
