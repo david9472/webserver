@@ -24,16 +24,16 @@ namespace network::tcp
     socklen_t socketAddressLen_;
 
     void openSocket();
+    void bindSocket();
     void closeSocket();
 
     void acceptConnection();
-
 
   public:
     Socket(const network::ip::IPv4Address& addr, unsigned short port);
     ~Socket();
 
-     void bindSocket();
+
      void listenSocket();
      void sendResponse() const;
 

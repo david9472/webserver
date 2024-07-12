@@ -33,6 +33,7 @@ namespace network::tcp
     Socket::Socket(const network::ip::IPv4Address& addr, const unsigned short port) : address_(addr), port_(port), socketAddressLen_(sizeof(socketAddress_))
     {
       openSocket();
+      bindSocket();
     }
 
      Socket::~Socket()
@@ -79,7 +80,6 @@ namespace network::tcp
          close(new_socket_fd_);
        }
      }
-
 
      void Socket::sendResponse() const
      {
