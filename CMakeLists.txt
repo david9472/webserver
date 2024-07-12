@@ -13,6 +13,10 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_executable(webserver main.cpp
         serializable.hpp
-        ipaddress.hpp)
+        ipaddress.hpp
+        socket.cpp
+        socket.hpp
+        logger.hpp
+        trace.hpp)
 
 target_link_libraries(webserver fmt::fmt)
