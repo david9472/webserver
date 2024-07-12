@@ -9,6 +9,7 @@
 #include "error.hpp"
 #include "socketfiledescriptor.hpp"
 
+#include <functional>
 
 namespace network::tcp
 {
@@ -36,9 +37,9 @@ namespace network::tcp
     ~Socket();
 
 
-    void listenSocket();
+    void listenSocket(const std::function<std::string(const std::string& msg_received)>& response_callback);
 
-    void sendResponse(const SocketFileDescriptor& accepted_socket) const;
+    void sendResponse(const SocketFileDescriptor& accepted_socket, const std::string& response_string) const;
 
   };
 

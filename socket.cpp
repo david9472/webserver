@@ -51,7 +51,7 @@ namespace network::tcp
          throw logging::Error(LOC, "Cannot connect socket to address");
      }
 
-     void Socket::listenSocket()
+     void Socket::listenSocket(const std::function<std::string(const std::string& msg_received)>& response_callback)
      {
        constexpr short MAX_NUMBER_LISTENING_THREADS{5};
        if (listen(socket_, MAX_NUMBER_LISTENING_THREADS) < 0)
@@ -73,15 +73,14 @@ namespace network::tcp
          logging::Logger::getInstance().log(logging::LogLevel::INFO, fmt::format("Received {} bytes", bytes_received));
          logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Msg: {}", buffer.data()));
 
-         sendResponse(accepted_socket);
+         sendResponse(accepted_socket, response_callback(buffer.data()));
        }
      }
 
-     void Socket::sendResponse(const SocketFileDescriptor& accepted_socket) const
+     void Socket::sendResponse(const SocketFileDescriptor& accepted_socket, const std::string& response_string) const
      {
-      const std::string responseString{"OK"};
-      const long bytesSent = write(accepted_socket, responseString.c_str(), responseString.size());
-      if (bytesSent == responseString.size())
+      const long bytesSent = write(accepted_socket, response_string.c_str(), response_string.size());
+      if (bytesSent == response_string.size())
         logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Send response successful");
       else
         throw logging::Error(LOC, "Sending response message failed!");
