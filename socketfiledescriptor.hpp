@@ -24,6 +24,8 @@ namespace network
         return;
 
       logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Closing socket file descriptor");
+
+      shutdown(socket_fd_, SHUT_RDWR);
       close(socket_fd_);
       socket_fd_ = -1;
     }
