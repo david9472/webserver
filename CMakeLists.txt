@@ -16,7 +16,10 @@ add_executable(webserver main.cpp
         ipaddress.hpp
         socket.cpp
         socket.hpp
-        logger.hpp
-        trace.hpp)
+        trace.hpp
+        concurrencymanager.cpp
+        concurrencymanager.hpp
+        logger.cpp
+        logger.hpp)
 
 target_link_libraries(webserver fmt::fmt)
