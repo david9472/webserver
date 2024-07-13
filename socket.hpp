@@ -7,6 +7,7 @@
 
 #include "ipaddress.hpp"
 #include "error.hpp"
+#include "trace.hpp"
 #include "socketfiledescriptor.hpp"
 
 #include <functional>
@@ -24,21 +25,29 @@ namespace network::tcp
       std::thread worker_;
 
     public:
-      explicit ConnectionManager(std::function<void(void)> task, int accepted_socket) : accepted_socket_(accepted_socket)
-      {
-        worker_ = std::thread(std::move(task));
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Started worker thread (TID: {})", logging::formatThreadId(worker_.get_id())));
-      }
+      explicit ConnectionManager(int accepted_socket) : accepted_socket_(accepted_socket) {}
 
       ~ConnectionManager()
       {
+        const logging::Trace trace(__func__, fmt::format("worker thread TID: {}", logging::formatThreadId(worker_.get_id())));
+        if (!worker_.joinable())
+        {
+          logging::Logger::getInstance().log(logging::LogLevel::WARNING, fmt::format("worker thread not joinable! TID: {}", logging::formatThreadId(worker_.get_id())));
+          return;
+        }
+
         worker_.join();
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Joined worker thread (TID: {})", logging::formatThreadId(worker_.get_id())));
       }
 
       ConnectionManager(ConnectionManager&& other)  noexcept : accepted_socket_(other.accepted_socket_), worker_(std::move(other.worker_)) {}
 
       [[nodiscard]] int getAcceptedSocket() const { return accepted_socket_; }
+
+      void start(std::function<void(void)> task)
+      {
+        worker_ = std::thread(std::move(task));
+        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Started worker thread (TID: {})", logging::formatThreadId(worker_.get_id())));
+      }
     };
 
     std::vector<ConnectionManager> connections_;
@@ -55,12 +64,12 @@ namespace network::tcp
     void closeSocket();
 
     void acceptConnection(SocketFileDescriptor& accepted_socket);
-    void handleConnection(SocketFileDescriptor accepted_socket) const;
+    void handleConnection(SocketFileDescriptor accepted_socket, std::function<std::string(const std::string& received_msg)> response_handler) const;
   public:
     Socket(const network::ip::IPv4Address &addr, unsigned short port);
     ~Socket();
 
-    void listenSocket();
+    void listenSocket(std::function<std::string(const std::string& received_msg)> response_handler);
     void shutdownSocket();
   };
 

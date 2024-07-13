@@ -70,7 +70,7 @@ namespace network::tcp
     accepted_socket = accept(socket_, reinterpret_cast<sockaddr *>(&socketAddress_), &socketAddressLen_);
     if (shutdown_)
     {
-      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Shutdown signal received");
+      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC,"Shutdown signal received");
       return;
     }
     if (accepted_socket < 0)
@@ -105,7 +105,7 @@ namespace network::tcp
   /// @brief Accepts incoming connections, starts a new thread for each accepted socket and
   ///        handles the subsequent communications
   /// @throws logging::SystemError
-  void Socket::listenSocket()
+  void Socket::listenSocket(std::function<std::string(const std::string& received_msg)> response_handler)
   {
     const logging::Trace trace(__func__);
     constexpr short MAX_NUMBER_LISTENING_THREADS{5};
@@ -115,7 +115,7 @@ namespace network::tcp
       const int result = listen(socket_, MAX_NUMBER_LISTENING_THREADS);
       if (shutdown_)
       {
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Shutdown signal received");
+        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
         return;
       }
       else if (result < 0)
@@ -125,9 +125,11 @@ namespace network::tcp
 
       SocketFileDescriptor accepted_socket;
       acceptConnection(accepted_socket);
+      if (shutdown_)
+        return;
 
-      connections_.emplace_back([this, &accepted_socket]() { handleConnection(std::move(accepted_socket)); },
-                                accepted_socket);
+      auto& it = connections_.emplace_back(accepted_socket);
+      it.start([this, &accepted_socket, &response_handler]() { handleConnection(std::move(accepted_socket), std::move(response_handler)); });
     }
   }
 
@@ -136,7 +138,7 @@ namespace network::tcp
   /// @brief Gets executed by multiple threads to handle multiple accepted sockets at the same time
   /// @param[in] accepted_socket : accepted socket for the communication
   /// @throws logging::SystemError
-  void Socket::handleConnection(SocketFileDescriptor accepted_socket) const
+  void Socket::handleConnection(SocketFileDescriptor accepted_socket, const std::function<std::string(const std::string& received_msg)> response_handler) const
   {
     const logging::Trace trace(__func__);
     while (true)
@@ -146,7 +148,7 @@ namespace network::tcp
       const int bytes_received = read(accepted_socket, buffer, SIZE_BUFFER);
       if (shutdown_)
       {
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Shutdown signal received");
+        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
         return;
       }
       else if (bytes_received < 0)
@@ -154,9 +156,9 @@ namespace network::tcp
         throw logging::SystemError(LOC, "Read failed");
       }
 
-      logging::Logger::getInstance().log(logging::LogLevel::INFO, fmt::format("Message received: {}", buffer));
+      logging::Logger::getInstance().log(logging::LogLevel::INFO, LOC, fmt::format("Message received: {}", buffer));
 
-      const std::string response{R"(HTTP/1.1 200 OK\r\n\n)"};
+      const std::string response{response_handler(buffer)};
       const int bytes_sent = send(accepted_socket, response.c_str(), response.size(), 0);
       if (bytes_sent != response.size())
       {
@@ -172,6 +174,7 @@ namespace network::tcp
   {
     const logging::Trace trace(__func__);
     logging::Logger::getInstance().log(logging::LogLevel::DEBUG,
+                                       LOC,
                                        fmt::format("Number of thread contexts: {}", connections_.size()));
     shutdown_ = true;
     socket_ = -1;
@@ -180,7 +183,5 @@ namespace network::tcp
                   [](const ConnectionManager &connection_manager) {
                     shutdown(connection_manager.getAcceptedSocket(), SHUT_RDWR);
                   });
-
-    logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Joined all threads");
   }
 };
