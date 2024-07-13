@@ -17,11 +17,6 @@ namespace network::tcp
   class Socket
   {
   private:
-    network::ip::IPv4Address address_;
-    unsigned short port_;
-    SocketFileDescriptor socket_;
-    bool shutdown_;
-
     class ConnectionManager
     {
     private:
@@ -48,6 +43,10 @@ namespace network::tcp
 
     std::vector<ConnectionManager> connections_;
 
+    network::ip::IPv4Address address_;
+    unsigned short port_;
+    SocketFileDescriptor socket_;
+    bool shutdown_;
     sockaddr_in socketAddress_{};
     socklen_t socketAddressLen_;
 
@@ -56,8 +55,7 @@ namespace network::tcp
     void closeSocket();
 
     void acceptConnection(SocketFileDescriptor& accepted_socket);
-
-    void handleConnection(SocketFileDescriptor accepted_socket);
+    void handleConnection(SocketFileDescriptor accepted_socket) const;
   public:
     Socket(const network::ip::IPv4Address &addr, unsigned short port);
     ~Socket();
