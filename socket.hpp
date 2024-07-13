@@ -55,6 +55,7 @@ namespace network::tcp
     network::ip::IPv4Address address_;
     unsigned short port_;
     SocketFileDescriptor socket_;
+    std::mutex shutdown_mutex_;
     bool shutdown_;
     sockaddr_in socketAddress_{};
     socklen_t socketAddressLen_;
@@ -63,8 +64,10 @@ namespace network::tcp
     void bindSocket();
     void closeSocket();
 
+    bool isShutdownOngoing(const std::lock_guard<std::mutex>& lock) const;
+
     void acceptConnection(SocketFileDescriptor& accepted_socket);
-    void handleConnection(SocketFileDescriptor accepted_socket, std::function<std::string(const std::string& received_msg)> response_handler) const;
+    void handleConnection(SocketFileDescriptor accepted_socket, std::function<std::string(const std::string& received_msg)> response_handler);
   public:
     Socket(const network::ip::IPv4Address &addr, unsigned short port);
     ~Socket();

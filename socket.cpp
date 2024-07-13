@@ -68,10 +68,13 @@ namespace network::tcp
   {
     const logging::Trace trace(__func__);
     accepted_socket = accept(socket_, reinterpret_cast<sockaddr *>(&socketAddress_), &socketAddressLen_);
-    if (shutdown_)
     {
-      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC,"Shutdown signal received");
-      return;
+      std::lock_guard<std::mutex> g_shutdown_lock(shutdown_mutex_);
+      if (isShutdownOngoing(g_shutdown_lock))
+      {
+        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
+        return;
+      }
     }
     if (accepted_socket < 0)
     {
@@ -113,20 +116,26 @@ namespace network::tcp
     while (true)
     {
       const int result = listen(socket_, MAX_NUMBER_LISTENING_THREADS);
-      if (shutdown_)
       {
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
-        return;
+        std::lock_guard<std::mutex> g_shutdown_lock(shutdown_mutex_);
+        if (isShutdownOngoing(g_shutdown_lock))
+        {
+          logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
+          return;
+        }
       }
-      else if (result < 0)
+      if (result < 0)
       {
         throw logging::SystemError(LOC, "Socket listen failed!");
       }
 
       SocketFileDescriptor accepted_socket;
       acceptConnection(accepted_socket);
-      if (shutdown_)
-        return;
+      {
+        std::lock_guard<std::mutex> g_shutdown_lock(shutdown_mutex_);
+        if (isShutdownOngoing(g_shutdown_lock))
+          return;
+      }
 
       auto& it = connections_.emplace_back(accepted_socket);
       it.start([this, &accepted_socket, &response_handler]() { handleConnection(std::move(accepted_socket), std::move(response_handler)); });
@@ -138,7 +147,7 @@ namespace network::tcp
   /// @brief Gets executed by multiple threads to handle multiple accepted sockets at the same time
   /// @param[in] accepted_socket : accepted socket for the communication
   /// @throws logging::SystemError
-  void Socket::handleConnection(SocketFileDescriptor accepted_socket, const std::function<std::string(const std::string& received_msg)> response_handler) const
+  void Socket::handleConnection(SocketFileDescriptor accepted_socket, const std::function<std::string(const std::string& received_msg)> response_handler)
   {
     const logging::Trace trace(__func__);
     while (true)
@@ -146,12 +155,16 @@ namespace network::tcp
       constexpr int SIZE_BUFFER{2048};
       char buffer[SIZE_BUFFER]{};
       const int bytes_received = read(accepted_socket, buffer, SIZE_BUFFER);
-      if (shutdown_)
       {
-        logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
-        return;
+        std::lock_guard<std::mutex> g_shutdown_lock(shutdown_mutex_);
+        if (isShutdownOngoing(g_shutdown_lock))
+        {
+          logging::Logger::getInstance().log(logging::LogLevel::DEBUG, LOC, "Shutdown signal received");
+          return;
+        }
       }
-      else if (bytes_received < 0)
+
+      if (bytes_received < 0)
       {
         throw logging::SystemError(LOC, "Read failed");
       }
@@ -176,12 +189,20 @@ namespace network::tcp
     logging::Logger::getInstance().log(logging::LogLevel::DEBUG,
                                        LOC,
                                        fmt::format("Number of thread contexts: {}", connections_.size()));
+    shutdown_mutex_.lock();
     shutdown_ = true;
+    shutdown_mutex_.unlock();
+
     socket_ = -1;
 
     std::for_each(connections_.begin(), connections_.end(),
                   [](const ConnectionManager &connection_manager) {
                     shutdown(connection_manager.getAcceptedSocket(), SHUT_RDWR);
                   });
+  }
+
+  bool Socket::isShutdownOngoing(const std::lock_guard<std::mutex>&) const
+  {
+    return shutdown_;
   }
 };
