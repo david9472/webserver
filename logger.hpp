@@ -15,6 +15,8 @@
 #include <thread>
 #include<fmt/core.h>
 
+#include "color.hpp"
+
 namespace logging
 {
   std::size_t formatThreadId(const std::thread::id& tid);
@@ -50,6 +52,7 @@ namespace logging
     static std::string formatTime(const std::chrono::system_clock::time_point &time_point);
 
     static std::string logLevelToString(LogLevel level);
+    static color::Modifier logLevelToColor(LogLevel level);
 
     bool logThreadId_;
     LogLevel loglevel_;

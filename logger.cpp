@@ -82,10 +82,13 @@ namespace logging
       return;
     }
 
-    const std::string logEntry{fmt::format("{} [{}]{} {}", getCurrentTime(), logLevelToString(level),
-                                           (logThreadId_ ? "[" +
-                                                           std::to_string(formatThreadId(std::this_thread::get_id())) +
-                                                           "]" : ""), message)};
+    const std::string logEntry{fmt::format("{}{} [{}]{} {}{}",
+                                           getCurrentTime(),
+                                           logLevelToColor(level).to_string(),
+                                           logLevelToString(level),
+                                           (logThreadId_ ? "[" + std::to_string(formatThreadId(std::this_thread::get_id())) + "]" : ""),
+                                           message,
+                                           color::DEFAULT_COLOR.to_string())};
     std::lock_guard<std::mutex> guard(outputmutex_);
     *outputstream_ << logEntry << std::endl;
   }
@@ -96,10 +99,13 @@ namespace logging
     {
       return;
     }
-    const std::string logEntry{fmt::format("{} [{}]{} {} in File: {} Function: {} Line: {}", getCurrentTime(), logLevelToString(level),
+    const std::string logEntry{fmt::format("{}{} [{}]{} {} in File: {} Function: {} Line: {}{}",
+                                           getCurrentTime(),
+                                           logLevelToColor(level).to_string(),
+                                           logLevelToString(level),
                                            (logThreadId_ ? "[" +
                                                            std::to_string(formatThreadId(std::this_thread::get_id())) +
-                                                           "]" : ""), message, fileName, functionName, lineNumber)};
+                                                           "]" : ""), message, fileName, functionName, lineNumber, color::DEFAULT_COLOR.to_string())};
     std::lock_guard<std::mutex> guard(outputmutex_);
     *outputstream_ << logEntry << std::endl;
   }
@@ -154,6 +160,19 @@ namespace logging
       case LogLevel::ERROR: return "ERROR";
       case LogLevel::DEBUG: return "DEBUG";
       default: return "UNKNOWN";
+    }
+  }
+
+  color::Modifier Logger::logLevelToColor(LogLevel level)
+  {
+    switch (level)
+    {
+      case LogLevel::INFO: return {color::Code::FG_DEFAULT};
+      case LogLevel::TRACE: return {color::Code::FG_DEFAULT};
+      case LogLevel::WARNING: return {color::Code::FG_YELLOW};
+      case LogLevel::ERROR: return {color::Code::FG_RED};
+      case LogLevel::DEBUG: return {color::Code::FG_GREEN};
+      default: return {color::Code::FG_DEFAULT};
     }
   }
 } // logging
