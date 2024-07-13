@@ -17,8 +17,6 @@ add_executable(webserver main.cpp
         socket.cpp
         socket.hpp
         trace.hpp
-        concurrencymanager.cpp
-        concurrencymanager.hpp
         logger.cpp
         logger.hpp)
 
