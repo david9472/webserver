@@ -57,11 +57,6 @@ namespace network
     {
       if (this != &other)
       {
-        // Close the current file descriptor
-        if (socket_fd_ >= 0)
-        {
-          closeSocketFd();
-        }
         // Transfer ownership of the file descriptor
         socket_fd_ = other.socket_fd_;
         other.socket_fd_ = -1; // Invalidate the moved-from object
