@@ -90,6 +90,20 @@ namespace logging
     *outputstream_ << logEntry << std::endl;
   }
 
+  void Logger::log(LogLevel level, const std::string &fileName, const std::string &functionName, const long lineNumber, const std::string& message)
+  {
+    if (level < loglevel_)
+    {
+      return;
+    }
+    const std::string logEntry{fmt::format("{} [{}]{} {} in File: {} Function: {} Line: {}", getCurrentTime(), logLevelToString(level),
+                                           (logThreadId_ ? "[" +
+                                                           std::to_string(formatThreadId(std::this_thread::get_id())) +
+                                                           "]" : ""), message, fileName, functionName, lineNumber)};
+    std::lock_guard<std::mutex> guard(outputmutex_);
+    *outputstream_ << logEntry << std::endl;
+  }
+
   /// @class Logger
   /// @name getCurrentTime
   /// @brief Helper to get current time in HH:MM:SS:MS format

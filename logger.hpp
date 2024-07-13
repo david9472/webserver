@@ -41,6 +41,7 @@ namespace logging
     void setOutputStream(std::ostream &os);
 
     void log(LogLevel level, const std::string &message);
+    void log(LogLevel level, const std::string &fileName, const std::string &functionName, const long lineNumber, const std::string& message);
 
   private:
     Logger();
