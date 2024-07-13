@@ -172,10 +172,11 @@ namespace network::tcp
       logging::Logger::getInstance().log(logging::LogLevel::INFO, LOC, fmt::format("Message received: {}", buffer));
 
       const std::string response{response_handler(buffer)};
-      const int bytes_sent = send(accepted_socket, response.c_str(), response.size(), 0);
+      const int bytes_sent = send(accepted_socket, response.c_str(), response.size(), MSG_NOSIGNAL);
       if (bytes_sent != response.size())
       {
-        throw logging::SystemError(LOC, "send failed");
+        logging::Logger::getInstance().log(logging::LogLevel::INFO, LOC, "Send failed! Stopping listening thread");
+        return;
       }
     }
   }
