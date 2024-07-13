@@ -22,12 +22,17 @@ namespace logging
     const std::string functionName_;
 
   public:
-    explicit Trace(std::string functionName) : enter_time(std::chrono::high_resolution_clock::now()),
-                                               functionName_(std::move(functionName))
+    explicit Trace(std::string functionName) : Trace(std::move(functionName), "")
+    {
+    }
+
+    Trace(std::string functionName, std::string msg) : enter_time(std::chrono::high_resolution_clock::now()),
+                                                       functionName_(std::move(functionName))
     {
       logging::Logger::getInstance().log(logging::LogLevel::TRACE,
-                                         fmt::format("ENTERING {}",
-                                                     functionName_));
+                                         fmt::format("ENTERING {}({})",
+                                                     functionName_,
+                                                     msg));
     }
 
     ~Trace()
