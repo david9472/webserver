@@ -23,7 +23,7 @@ namespace network
       if (socket_fd_ < 0)
         return;
 
-      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, "Closing socket file descriptor");
+      logging::Logger::getInstance().log(logging::LogLevel::DEBUG, fmt::format("Closing socket file descriptor! fd: {}", socket_fd_));
 
       shutdown(socket_fd_, SHUT_RDWR);
       close(socket_fd_);
