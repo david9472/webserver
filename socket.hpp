@@ -9,6 +9,7 @@
 #include "error.hpp"
 #include "trace.hpp"
 #include "socketfiledescriptor.hpp"
+#include "messagequeue.hpp"
 
 #include <functional>
 #include <thread>
@@ -59,20 +60,26 @@ namespace network::tcp
     bool shutdown_;
     sockaddr_in socketAddress_{};
     socklen_t socketAddressLen_;
+    std::thread listen_socket_thread_;
+    std::thread answer_thread_;
+
+    MessageQueue& message_queue_;
 
     void openSocket();
     void bindSocket();
     void closeSocket();
 
-    bool isShutdownOngoing(const std::lock_guard<std::mutex>& lock) const;
+    [[nodiscard]] bool isShutdownOngoing(const std::lock_guard<std::mutex>& lock) const;
 
     void acceptConnection(SocketFileDescriptor& accepted_socket);
-    void handleConnection(SocketFileDescriptor accepted_socket, std::function<std::string(const std::string& received_msg)> response_handler);
+    void handleConnection(SocketFileDescriptor accepted_socket);
+    void sendResponseThreaded();
+    void listenSocketThreaded();
   public:
-    Socket(const network::ip::IPv4Address &addr, unsigned short port);
+    Socket(const network::ip::IPv4Address &addr, unsigned short port,  MessageQueue& message_queue);
     ~Socket();
 
-    void listenSocket(std::function<std::string(const std::string& received_msg)> response_handler);
+    void listenSocket();
     void shutdownSocket();
   };
 
