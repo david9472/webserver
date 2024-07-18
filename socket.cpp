@@ -28,7 +28,6 @@ namespace network::tcp
   /// @name ~Socket
   /// @brief destructor which closes potentially open sockets
   /// @throws None
-  
   Socket::~Socket()
   {
     const logging::Trace trace(__func__);
@@ -57,7 +56,6 @@ namespace network::tcp
   /// @name openSocket
   /// @brief Opens a new socket
   /// @throws logging::SystemError
-  
   void Socket::openSocket()
   {
     const logging::Trace trace(__func__);
@@ -73,7 +71,6 @@ namespace network::tcp
   /// @name closeSocket
   /// @brief Closes the socket
   /// @throws None
-  
   void Socket::closeSocket()
   {
     const logging::Trace trace(__func__);
@@ -85,7 +82,6 @@ namespace network::tcp
   /// @brief Accepts incoming connections
   /// @param[out] accepted_socket : file descriptor of the accepted connection
   /// @throws logging::SystemError
-  
   void Socket::acceptConnection(SocketFileDescriptor &accepted_socket)
   {
     const logging::Trace trace(__func__);
@@ -110,7 +106,6 @@ namespace network::tcp
   /// @name bindSocket
   /// @brief uses the syscall 'bind' to bind a socket
   /// @throws logging::SystemError
-  
   void Socket::bindSocket()
   {
     const logging::Trace trace(__func__);
@@ -131,7 +126,6 @@ namespace network::tcp
   /// @brief Accepts incoming connections, starts a new thread for each accepted socket and
   ///        handles the subsequent communications
   /// @throws logging::SystemError
-  
   void Socket::listenSocket()
   {
     const logging::Trace trace(__func__);
@@ -140,6 +134,9 @@ namespace network::tcp
     answer_thread_ = std::thread([this](){sendResponseThreaded();});
   }
 
+  /// @class Socket
+  /// @name listenSocketThreaded
+  /// @brief Tasks executed by thread to listen for incoming connections and starting a listener thread
   void Socket::listenSocketThreaded()
   {
     constexpr short MAX_NUMBER_LISTENING_THREADS{5};
@@ -177,7 +174,6 @@ namespace network::tcp
   /// @brief Gets executed by multiple threads to handle multiple accepted sockets at the same time
   /// @param[in] accepted_socket : accepted socket for the communication
   /// @throws logging::SystemError
-  
   void Socket::handleConnection(SocketFileDescriptor accepted_socket)
   {
     const logging::Trace trace(__func__);
@@ -219,6 +215,10 @@ namespace network::tcp
     }
   }
 
+  /// @class Socket
+  /// @name sendResponseThreaded
+  /// @brief task executed by a thread to retrieve messages from the respond queue and sending the via the provided socket
+  /// @throws None
   void Socket::sendResponseThreaded()
   {
     while (true)
@@ -246,7 +246,6 @@ namespace network::tcp
   /// @class Socket
   /// @name shutdownSocket
   /// @brief End the communication on a socket by closing all file descriptors and joining all threads
-  
   void Socket::shutdownSocket()
   {
     const logging::Trace trace(__func__);

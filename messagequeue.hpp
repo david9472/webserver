@@ -24,17 +24,21 @@ public:
   [[nodiscard]] int getSocket() const { return socket_; }
 };
 
+///@interface MessageQueue
 class MessageQueue
 {
 public:
+  ///@brief Shall add a received message to the message queue. Exclusive access to the queue must be ensured
   virtual void enqueueReceivedMessage(const Message& message) = 0;
+  ///@brief Removes a previously received message from the queue. In case no message is available, the accessing thread blocks until a message is available
   virtual Message retrieveReceivedMessage() = 0;
-
+  ///@brief Removes a previously received message from the queue. In case no message is available, an empty object gets returned immediately
   virtual std::optional<Message> retrieveResponseMessageNonBlocking() = 0;
+  ///@brief Removes a previously enqueued response message from the queue. In case no message is available, the accessing thread blocks until a message is available
   virtual Message retrieveResponseMessage() = 0;
-
+  ///@brief Shall add a response message to the message queue. Exclusive access to the queue must be ensured
   virtual void enqueueResponseMessage(const Message& message) = 0;
-
+  ///@brief performs the shutdown procedure. All blocking synchronisation primitives must be signaled
   virtual void shutdown() = 0;
 };
 
