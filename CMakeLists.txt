@@ -12,12 +12,15 @@ FetchContent_MakeAvailable(fmt)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(webserver main.cpp
+        serializable.cpp
         serializable.hpp
         ipaddress.hpp
         socket.cpp
         socket.hpp
         trace.hpp
         logger.cpp
-        logger.hpp)
+        logger.hpp
+        messagequeue.cpp
+        messagequeue.hpp)
 
 target_link_libraries(webserver fmt::fmt)
