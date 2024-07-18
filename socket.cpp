@@ -14,7 +14,7 @@ namespace network::tcp
   /// @param[in] addr : IPv4 Address on which the socket should communicate
   /// @param[in] port : Port on which the socket should communicate
   /// @throws logging::SystemError
-  Socket::Socket(const network::ip::IPv4Address &addr, const unsigned short port, MessageQueue& message_queue) : address_(addr), port_(port),
+  Socket::Socket(const network::ip::IPv4Address &addr, const unsigned short port, container::message_queue::Queue& message_queue) : address_(addr), port_(port),
                                                                                                                   socketAddressLen_(sizeof(socketAddress_)),
                                                                                                                   shutdown_(false),
                                                                                                                   message_queue_(message_queue)
@@ -200,7 +200,7 @@ namespace network::tcp
 
       message_queue_.enqueueReceivedMessage({buffer, accepted_socket});
 
-      std::optional<Message> response{message_queue_.retrieveResponseMessageNonBlocking()};
+      std::optional<container::message_queue::Message> response{message_queue_.retrieveResponseMessageNonBlocking()};
       if (response.has_value())
       {
         const int bytes_sent = send(response.value().getSocket(), response.value().getMessageString().c_str(), response.value().getMessageString().length(), MSG_NOSIGNAL);
@@ -223,7 +223,7 @@ namespace network::tcp
   {
     while (true)
     {
-      Message response{message_queue_.retrieveResponseMessage()};
+      container::message_queue::Message response{message_queue_.retrieveResponseMessage()};
       {
         std::lock_guard<std::mutex> g_shutdown_lock(shutdown_mutex_);
         if (isShutdownOngoing(g_shutdown_lock))

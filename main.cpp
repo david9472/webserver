@@ -19,12 +19,12 @@ void simulateKeyboard(network::tcp::Socket* socket)
 }
 
 
-void handle_message_queue(SocketMessageQueue* message_queue)
+void handle_message_queue(network::tcp::SocketMessageQueue* message_queue)
 {
   std::cout << "Message responder started" << std::endl;
   while (true)
   {
-    Message message = message_queue->retrieveReceivedMessage();
+    container::message_queue::Message message = message_queue->retrieveReceivedMessage();
     std::cout << "Received message" << std::endl;
     message_queue->enqueueResponseMessage({"200 OK", message.getSocket()});
 
@@ -41,7 +41,7 @@ int main()
 
   const logging::Trace trace(__func__ );
 
-  SocketMessageQueue socketMessageQueue;
+  network::tcp::SocketMessageQueue socketMessageQueue;
   network::tcp::Socket socket(network::ip::IPv4Address(127, 0, 0, 1), 8080, socketMessageQueue);
 
   std::thread thread(simulateKeyboard, &socket);

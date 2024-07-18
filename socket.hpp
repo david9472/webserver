@@ -63,7 +63,7 @@ namespace network::tcp
     std::thread listen_socket_thread_;
     std::thread answer_thread_;
 
-    MessageQueue& message_queue_;
+    container::message_queue::Queue& message_queue_;
 
     void openSocket();
     void bindSocket();
@@ -76,7 +76,7 @@ namespace network::tcp
     void sendResponseThreaded();
     void listenSocketThreaded();
   public:
-    Socket(const network::ip::IPv4Address &addr, unsigned short port,  MessageQueue& message_queue);
+    Socket(const network::ip::IPv4Address &addr, unsigned short port,  container::message_queue::Queue& message_queue);
     ~Socket();
 
     void listenSocket();
