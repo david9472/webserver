@@ -11,12 +11,9 @@ class Serializable
 {
 public:
   [[nodiscard]] virtual std::string serialize() const = 0;
+
+  virtual ~Serializable() = default;
 };
 
-std::ostream& operator<<(std::ostream& os, const Serializable& s)
-{
-  os << s.serialize();
-  return os;
-}
-
+std::ostream& operator<<(std::ostream& os, const Serializable& s);
 #endif //WEBSERVER_SERIALIZABLE_HPP
